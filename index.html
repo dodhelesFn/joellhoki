@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generator Angka Acak 4 Digit</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <style>
+        /* CSS untuk tampilan estetik */
+        :root {
+            --bg-color: #0d1117;
+            --digit-bg: #161b22;
+            --border-color: #30363d;
+            --glow-color: #58a6ff;
+            --text-color: #c9d1d9;
+            --font-family: 'Orbitron', sans-serif;
+        }
+
+        .theme-hongkong {
+            --bg-color: #1a1a2e;      /* Ungu sangat gelap */
+            --digit-bg: #2a2a4e;
+            --border-color: #4a4a7e;
+            --glow-color: #e040fb;      /* Pink Neon */
+            --text-color: #e6e6fa;      /* Lavender putih */
+        }
+
+        .theme-sydney {
+            --bg-color: #0a192f;      /* Biru Navy gelap */
+            --digit-bg: #172a45;
+            --border-color: #304a6d;
+            --glow-color: #64ffda;      /* Aqua/Teal cerah */
+            --text-color: #ccd6f6;      /* Biru pucat */
+        }
+
+        /* Tema Warna Baru */
+        .theme-singapore {
+            --bg-color: #1a1010;
+            --digit-bg: #2a1d1d;
+            --border-color: #4d3333;
+            --glow-color: #d32f2f; /* Merah */
+            --text-color: #f0f6fc;
+        }
+
+        .theme-china {
+            --bg-color: #2b0c0e;
+            --digit-bg: #3c1b1d;
+            --border-color: #5c4b1e;
+            --glow-color: #ffc107; /* Emas */
+            --text-color: #fffde7;
+        }
+
+
+        body {
+            /* Latar belakang default untuk aplikasi generator */
+            background-color: var(--bg-color); 
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            text-align: center;
+            transition: background 0.5s ease-in-out;
+        }
+
+        /* Latar belakang khusus untuk menu utama dengan tema bumi */
+        body.main-menu-view {
+            /* Latar belakang estetik baru untuk menu utama */
+            background: #0d1117; /* Fallback */
+            background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+            overflow: hidden;
+        }
+
+        .container {
+            position: relative; /* Untuk positioning tombol kembali */
+            background-color: var(--digit-bg);
+            padding: 30px;
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2), 0 0 20px rgba(88, 166, 255, 0.1);
+            width: 90%;
+            max-width: 650px; /* Max width untuk mengakomodasi 7 digit */
+            box-sizing: border-box;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+            letter-spacing: 1px;
+            color: var(--text-color);
+        }
+
+        .code-display {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 40px;
+            justify-content: center;
+            flex-wrap: wrap; /* Agar digit bisa turun baris di layar kecil */
+        }
+
+        .digit {
+            width: 90px;
+            height: 90px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: var(--font-family);
+            font-size: 2rem;
+            font-weight: 700;
+            border-radius: 50%;
+            /* NEW: Default appearance for empty slots to make them visible */
+            background: var(--bg-color); /* Looks like a hole in the container */
+            border: 1px solid var(--border-color);
+
+            /* Efek 3D Glossy untuk bola */
+            box-shadow: 
+                inset -8px -8px 12px rgba(0, 0, 0, 0.4), /* Bayangan gelap di dalam */
+                inset 8px 8px 12px rgba(255, 255, 255, 0.25), /* Highlight terang di dalam */
+                2px 2px 5px rgba(0, 0, 0, 0.3); /* Bayangan jatuh (drop shadow) */
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease;
+            transform: perspective(500px) rotateX(0deg);
+        }
+
+        /* Animasi saat angka digenerate */
+        .generating .digit {
+            /* Animasi baru: kalem dan berurutan */
+            animation: fadeInScaleUp 0.5s ease-out forwards;
+            opacity: 0; /* Mulai dari transparan untuk animasi yang mulus */
+        }
+
+        .generating .digit:nth-child(1) { animation-delay: 0s; }
+        .generating .digit:nth-child(2) { animation-delay: 0.12s; }
+        .generating .digit:nth-child(3) { animation-delay: 0.24s; }
+        .generating .digit:nth-child(4) { animation-delay: 0.36s; }
+        .generating .digit:nth-child(5) { animation-delay: 0.48s; }
+        .generating .digit:nth-child(6) { animation-delay: 0.60s; }
+        .generating .digit:nth-child(7) { animation-delay: 0.72s; }
+
+        @keyframes fadeInScaleUp {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Warna Bola Biliar */
+        .ball-color-0 { background: radial-gradient(circle at 33% 33%, #ffffff, #e0e0e0); color: #212121; border: 2px solid #bdbdbd; } /* Cue ball */
+        .ball-color-1 { background: radial-gradient(circle at center, white 27%, transparent 28%), radial-gradient(circle at 33% 33%, #ffee58, #fbc02d); color: #212121; border: 2px solid #f57f17; } /* Yellow */
+        .ball-color-2 { background: radial-gradient(circle at center, white 27%, transparent 28%), radial-gradient(circle at 33% 33%, #42a5f5, #1976d2); color: #212121; border: 2px solid #0d47a1; } /* Blue */
+        .ball-color-3 { background: radial-gradient(circle at center, white 27%, transparent 28%), radial-gradient(circle at 33% 33%, #ef5350, #d32f2f); color: #212121; border: 2px solid #b71c1c; } /* Red */
+        .ball-color-4 { background: radial-gradient(circle at center, white 27%, transparent 28%), radial-gradient(circle at 33% 33%, #ab47bc, #6a1b9a); color: #212121; border: 2px solid #4a148c; } /* Purple */
+        .ball-color-5 { background: radial-gradient(circle at center, white 27%, transparent 28%), radial-gradient(circle at 33% 33%, #ffa726, #ef6c00); color: #212121; border: 2px solid #e65100; } /* Orange */
+        .ball-color-6 { background: radial-gradient(circle at center, white 27%, transparent 28%), radial-gradient(circle at 33% 33%, #66bb6a, #2e7d32); color: #212121; border: 2px solid #1b5e20; } /* Green */
+        .ball-color-7 { background: radial-gradient(circle at center, white 27%, transparent 28%), radial-gradient(circle at 33% 33%, #8d6e63, #795548); color: #212121; border: 2px solid #3e2723; } /* Maroon */
+        .ball-color-8 { background: radial-gradient(circle at center, white 27%, transparent 28%), radial-gradient(circle at 33% 33%, #424242, #212121); color: #212121; border: 2px solid #000000; } /* Black */
+        .ball-color-9 { background: linear-gradient(to bottom, transparent 35%, white 35%, white 65%, transparent 65%), radial-gradient(circle at 33% 33%, #ffee58, #fbc02d); color: #212121; border: 2px solid #f57f17; } /* 9-ball (Yellow with white stripe) */
+
+
+        /* Styling untuk pilihan jumlah digit */
+        .options-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .options-container label {
+            padding: 8px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .options-container input[type="radio"] {
+            display: none; /* Sembunyikan radio button asli */
+        }
+
+        .options-container input[type="radio"]:checked + label {
+            background-color: var(--glow-color);
+            color: var(--bg-color);
+            border-color: var(--glow-color);
+            font-weight: bold;
+        }
+
+        .options-container label:hover {
+            background-color: #30363d;
+        }
+
+        .generate-actions {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* Hide all generate buttons by default */
+        .generate-actions .action-btn {
+            display: none;
+        }
+
+        /* Show the correct button based on the view selected (class on .container) */
+        .container.view-7 .action-btn[data-digits="7"],
+        .container.view-6 .action-btn[data-digits="6"],
+        .container.view-5 .action-btn[data-digits="5"],
+        .container.view-4 .action-btn[data-digits="4"] {
+            display: inline-block;
+        }
+
+        .action-btn {
+            background-color: var(--glow-color);
+            color: var(--bg-color);
+            border: none;
+            padding: 15px 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .action-btn:hover {
+            background-color: #7bc0ff;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(88, 166, 255, 0.3);
+        }
+
+        .action-btn:active {
+            transform: translateY(-1px);
+        }
+
+        /* Main Menu Styling */
+        #main-menu {
+            text-align: center;
+        }
+
+        #main-menu h1 {
+            font-family: var(--font-family);
+            font-size: 2.5rem;
+            color: #e6edf3;
+            text-shadow: 0 0 8px rgba(88, 166, 255, 0.5), 0 0 20px rgba(88, 166, 255, 0.3);
+            margin-bottom: 50px;
+            letter-spacing: 3px;
+        }
+
+        .menu-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            align-items: center;
+        }
+
+        /* Tombol khusus untuk menu utama dengan efek glassmorphism */
+        #main-menu .action-btn {
+            background: rgba(34, 41, 51, 0.4);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            min-width: 220px;
+        }
+
+        #main-menu .action-btn:hover {
+            background: rgba(48, 54, 61, 0.7);
+            border-color: var(--glow-color);
+            color: #fff;
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(88, 166, 255, 0.2);
+        }
+
+        .back-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.3s, color 0.3s;
+            padding: 12px 20px;
+            margin-top: 30px; /* Memberi jarak dari tombol generator di atasnya */
+            width: 100%; /* Membuat lebar tombol penuh */
+            box-sizing: border-box;
+        }
+
+        .back-btn:hover {
+            background-color: var(--border-color);
+            color: #fff;
+        }
+
+        /* --- Media Queries untuk Responsiveness --- */
+
+        /* Untuk Tablet dan layar yang lebih kecil */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                width: 95%;
+            }
+
+            .digit {
+                width: 70px; /* Ukuran bola lebih kecil */
+                height: 70px;
+                font-size: 1.7rem; /* Ukuran angka di dalam bola */
+            }
+
+            .code-display {
+                gap: 10px; /* Jarak antar bola */
+            }
+
+            h1 {
+                font-size: 1.3rem;
+            }
+
+            #main-menu h1 {
+                font-size: 2rem;
+            }
+
+            .action-btn {
+                padding: 12px 25px;
+                font-size: 0.9rem;
+            }
+        }
+
+        /* Untuk Ponsel */
+        @media (max-width: 480px) {
+            .digit {
+                width: 55px; /* Ukuran bola sangat kecil */
+                height: 55px;
+                font-size: 1.4rem;
+            }
+
+            .code-display {
+                gap: 8px;
+                margin-bottom: 30px;
+            }
+
+            h1 {
+                font-size: 1.1rem;
+                margin-bottom: 20px;
+            }
+
+            /* Aturan .back-btn di media query tidak lagi diperlukan karena sudah responsif */
+        }
+    </style>
+</head>
+<body class="main-menu-view">
+
+<div id="main-menu">
+    <h1>JOELL HOKI</h1>
+    <div class="menu-actions">
+        <button class="action-btn" data-title="Joell Hongkong" data-theme="hongkong">Joell Hongkong</button>
+        <button class="action-btn" data-title="Joell Sydney" data-theme="sydney">Joell Sydney</button>
+        <button class="action-btn" data-title="Joell Singapore" data-theme="singapore">Joell Singapore</button>
+        <button class="action-btn" data-title="Joell China" data-theme="china">Joell China</button>
+    </div>
+</div>
+
+<main id="generator-app" style="display: none;">
+    <div class="container">
+        <h1 id="generator-title">Generator Kode Acak</h1>
+        <div class="code-display" id="code-container">
+            <!-- Digit akan dibuat oleh JavaScript -->
+        </div>
+        <div class="options-container">
+            <input type="radio" id="d7" name="digit-count" value="7" checked>
+            <label for="d7">7 Digit</label>
+
+            <input type="radio" id="d6" name="digit-count" value="6">
+            <label for="d6">6 Digit</label>
+
+            <input type="radio" id="d5" name="digit-count" value="5">
+            <label for="d5">5 Digit</label>
+
+            <input type="radio" id="d4" name="digit-count" value="4">
+            <label for="d4">4 Digit</label>
+        </div>
+        <div class="generate-actions">
+            <button class="action-btn" data-digits="7">Generate 7 Digit</button>
+            <button class="action-btn" data-digits="6">Generate 6 Digit</button>
+            <button class="action-btn" data-digits="5">Generate 5 Digit</button>
+            <button class="action-btn" data-digits="4">Generate 4 Digit</button>
+        </div>
+        <button id="back-btn" class="back-btn">Kembali ke Menu</button>
+    </div>
+</main>
+
+<script>
+    // JavaScript untuk fungsionalitas
+    const mainMenu = document.getElementById('main-menu');
+    const generatorApp = document.getElementById('generator-app');
+    const body = document.body;
+    const backBtn = document.getElementById('back-btn');
+    const container = generatorApp.querySelector('.container');
+    const generatorTitle = document.getElementById('generator-title');
+    const codeContainer = document.getElementById('code-container');
+    const optionsContainer = document.querySelector('.options-container');
+    const generateActions = document.querySelector('.generate-actions');
+
+    // State: Satu-satunya sumber kebenaran untuk kode yang digenerate
+    let generatedCodes = {
+        '7': [],
+        '6': [],
+        '5': [],
+        '4': []
+    };
+
+    function getSelectedDigitCount() {
+        // Mengambil nilai dari radio button yang dipilih
+        return parseInt(document.querySelector('input[name="digit-count"]:checked').value, 10);
+    }
+
+    // Fungsi ini HANYA mengatur jumlah elemen digit di DOM
+    function createDigits(count) {
+        const currentCount = codeContainer.children.length;
+
+        if (count > currentCount) {
+            // Jika jumlah baru lebih banyak, tambahkan kotak baru yang kosong
+            for (let i = 0; i < count - currentCount; i++) {
+                const digitSpan = document.createElement('span');
+                digitSpan.classList.add('digit');
+                codeContainer.appendChild(digitSpan);
+            }
+        } else if (count < currentCount) {
+            // Jika jumlah baru lebih sedikit, hapus kelebihan kotak dari belakang
+            for (let i = 0; i < currentCount - count; i++) {
+                codeContainer.removeChild(codeContainer.lastElementChild);
+            }
+        }
+    }
+
+    // Fungsi baru untuk menyinkronkan UI dengan state masterCode
+    function renderDigits() {
+        const allDigits = Array.from(document.querySelectorAll('.digit'));
+        const count = allDigits.length.toString();
+        const codeToRender = generatedCodes[count] || [];
+
+        allDigits.forEach((digit, index) => {
+            const number = codeToRender[index];
+
+            // 1. Hapus kelas warna bola sebelumnya untuk menghindari penumpukan
+            digit.className = 'digit'; // Cara yang lebih efisien untuk mereset kelas
+
+            // 2. Terapkan data dan kelas baru
+            if (number !== undefined) {
+                digit.textContent = number;
+                digit.classList.add(`ball-color-${number}`);
+            } else {
+                digit.textContent = '';
+            }
+        });
+    }
+
+    function createMasterCode() {
+        const numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+        for (let i = numbers.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
+        }
+        generatedCodes['7'] = numbers.slice(0, 7);
+    }
+
+    function generateRandomCode(count) {
+        const allDigits = Array.from(document.querySelectorAll('.digit'));
+        if (allDigits.length === 0) return;
+
+        // Jika generate 7 digit, buat master code baru dan reset turunan.
+        if (count === 7) {
+            createMasterCode();
+            // Reset kode turunan karena master code telah berubah
+            generatedCodes['6'] = [];
+            generatedCodes['5'] = [];
+            generatedCodes['4'] = [];
+        } else { // Logika baru untuk turunan (6, 5, 4 digit) yang hirarkis
+            // Pastikan master code 7 digit ada, jika tidak, buat dulu.
+            if (generatedCodes['7'].length === 0) {
+                createMasterCode();
+            }
+
+            if (count === 6) {
+                // Acak master code 7 digit untuk menghasilkan kode 6 digit
+                const shuffledMaster = [...generatedCodes['7']];
+                for (let i = shuffledMaster.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffledMaster[i], shuffledMaster[j]] = [shuffledMaster[j], shuffledMaster[i]];
+                }
+                generatedCodes['6'] = shuffledMaster.slice(0, 6);
+                // Reset turunan yang lebih kecil
+                generatedCodes['5'] = [];
+                generatedCodes['4'] = [];
+            } else if (count === 5) {
+                // Sesuai permintaan: 5 digit diambil dari 6 digit secara acak.
+                // Pastikan kode 6 digit ada. Jika tidak, buat dari master 7 digit.
+                if (generatedCodes['6'].length === 0) {
+                    const shuffledMaster = [...generatedCodes['7']];
+                    for (let i = shuffledMaster.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [shuffledMaster[i], shuffledMaster[j]] = [shuffledMaster[j], shuffledMaster[i]];
+                    }
+                    generatedCodes['6'] = shuffledMaster.slice(0, 6);
+                }
+                // Sekarang, acak kode 6 digit untuk mendapatkan 5 digit.
+                const shuffled6 = [...generatedCodes['6']];
+                for (let i = shuffled6.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled6[i], shuffled6[j]] = [shuffled6[j], shuffled6[i]];
+                }
+                generatedCodes['5'] = shuffled6.slice(0, 5);
+                // Reset turunan yang lebih kecil
+                generatedCodes['4'] = [];
+            } else if (count === 4) {
+                // Logika konsisten: 4 digit diambil dari 5 digit secara acak.
+                // Pastikan kode 5 digit ada. Jika tidak, buat dari 6 -> 7.
+                if (generatedCodes['5'].length === 0) {
+                    if (generatedCodes['6'].length === 0) {
+                        const shuffledMaster = [...generatedCodes['7']];
+                        for (let i = shuffledMaster.length - 1; i > 0; i--) {
+                            const j = Math.floor(Math.random() * (i + 1));
+                            [shuffledMaster[i], shuffledMaster[j]] = [shuffledMaster[j], shuffledMaster[i]];
+                        }
+                        generatedCodes['6'] = shuffledMaster.slice(0, 6);
+                    }
+                    const shuffled6 = [...generatedCodes['6']];
+                    for (let i = shuffled6.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [shuffled6[i], shuffled6[j]] = [shuffled6[j], shuffled6[i]];
+                    }
+                    generatedCodes['5'] = shuffled6.slice(0, 5);
+                }
+                // Sekarang, acak kode 5 digit untuk mendapatkan 4 digit.
+                const shuffled5 = [...generatedCodes['5']];
+                for (let i = shuffled5.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled5[i], shuffled5[j]] = [shuffled5[j], shuffled5[i]];
+                }
+                generatedCodes['4'] = shuffled5.slice(0, 4);
+            }
+        }
+
+        // Picu animasi dan render ulang tampilan dari masterCode
+        codeContainer.classList.add('generating');
+        renderDigits();
+
+        // Hapus kelas 'generating' setelah animasi selesai agar bisa berjalan lagi
+        const totalAnimationTime = 500 + (allDigits.length - 1) * 120 + 100; // duration + total delay + buffer
+        setTimeout(() => {
+            codeContainer.classList.remove('generating');
+        }, totalAnimationTime);
+    }
+
+    function updateView(count) {
+        // 1. Update the class on the container for CSS visibility rules
+        container.classList.remove('view-7', 'view-6', 'view-5', 'view-4');
+        container.classList.add(`view-${count}`);
+
+        // 2. Adjust the number of digit elements
+        createDigits(count);
+
+        // 3. Selalu render state yang tersimpan untuk view yang dipilih
+        renderDigits();
+    }
+
+    function initializeApp() {
+        // Saat aplikasi dimulai, buat slot sesuai pilihan default
+        const initialCount = getSelectedDigitCount();
+        updateView(initialCount);
+    }
+
+    // Event Listeners
+    mainMenu.addEventListener('click', (event) => {
+        const clickedButton = event.target.closest('[data-title]');
+        if (clickedButton) {
+            const title = clickedButton.dataset.title;
+            const theme = clickedButton.dataset.theme;
+            
+            // Set the title of the generator page
+            generatorTitle.textContent = title;
+
+            // Hapus latar belakang bumi dan beralih ke latar belakang aplikasi
+            body.classList.remove('main-menu-view');
+
+            // Apply the theme to the body
+            if (theme) { body.classList.add(`theme-${theme}`); }
+
+            mainMenu.style.display = 'none';
+            generatorApp.style.display = 'block';
+            initializeApp();
+        }
+    });
+
+    backBtn.addEventListener('click', () => {
+        // Sembunyikan generator dan tampilkan menu utama
+        generatorApp.style.display = 'none';
+        mainMenu.style.display = 'block';
+
+        // Reset body theme kembali ke tampilan menu utama (bumi)
+        body.className = 'main-menu-view';
+
+        // Reset state agar saat mulai lagi, papan bersih
+        generatedCodes = {
+            '7': [],
+            '6': [],
+            '5': [],
+            '4': []
+        };
+    });
+
+    // Listener untuk berpindah-pindah menu/view
+    optionsContainer.addEventListener('change', () => {
+        const newCount = getSelectedDigitCount();
+        updateView(newCount);
+    });
+
+    // Event Delegation: Satu listener untuk semua tombol generate
+    generateActions.addEventListener('click', (event) => {
+        // Pastikan yang diklik adalah tombol dengan atribut data-digits
+        if (event.target.matches('[data-digits]')) {
+            const digitCount = parseInt(event.target.dataset.digits, 10);
+            // The view is already correct thanks to the radio buttons.
+            // We just need to run the generation logic.
+            generateRandomCode(digitCount);
+        }
+    });
+</script>
+
+</body>
+</html>
