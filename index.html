@@ -357,12 +357,12 @@
 <body class="main-menu-view">
 
 <div id="main-menu">
-    <h1>JOELL HOKI</h1>
+    <h1>PILIH GENERATOR</h1>
     <div class="menu-actions">
-        <button class="action-btn" data-title="Joell Hongkong" data-theme="hongkong">Joell Hongkong</button>
-        <button class="action-btn" data-title="Joell Sydney" data-theme="sydney">Joell Sydney</button>
-        <button class="action-btn" data-title="Joell Singapore" data-theme="singapore">Joell Singapore</button>
-        <button class="action-btn" data-title="Joell China" data-theme="china">Joell China</button>
+        <button class="action-btn" data-title="Generator Kode Hongkong" data-theme="hongkong">Generate Hongkong</button>
+        <button class="action-btn" data-title="Generator Kode Sydney" data-theme="sydney">Generate Sydney</button>
+        <button class="action-btn" data-title="Generator Kode Singapore" data-theme="singapore">Generate Singapore</button>
+        <button class="action-btn" data-title="Generator Kode China" data-theme="china">Generate China</button>
     </div>
 </div>
 
@@ -406,14 +406,66 @@
     const codeContainer = document.getElementById('code-container');
     const optionsContainer = document.querySelector('.options-container');
     const generateActions = document.querySelector('.generate-actions');
+    const LOCAL_STORAGE_KEY_PREFIX = 'joellHokiGeneratorState';
 
     // State: Satu-satunya sumber kebenaran untuk kode yang digenerate
-    let generatedCodes = {
-        '7': [],
-        '6': [],
-        '5': [],
-        '4': []
-    };
+    let currentMarket = null;
+    let allGeneratedCodes = {}; // e.g., { hongkong: { '7': [], ... }, sydney: { ... } }
+
+    function getStorageKey(market) {
+        return `${LOCAL_STORAGE_KEY_PREFIX}_${market}`;
+    }
+
+    function saveState(market) {
+        if (!market || !allGeneratedCodes[market]) return;
+        const stateToSave = {
+            data: allGeneratedCodes[market],
+            timestamp: Date.now()
+        };
+        localStorage.setItem(getStorageKey(market), JSON.stringify(stateToSave));
+    }
+
+    function loadStateForMarket(market) {
+        const emptyState = { '7': [], '6': [], '5': [], '4': [] };
+        const storageKey = getStorageKey(market);
+        const storedData = localStorage.getItem(storageKey);
+
+        if (!storedData) {
+            return emptyState;
+        }
+
+        try {
+            const { data, timestamp } = JSON.parse(storedData);
+
+            if (!data || !timestamp) {
+                localStorage.removeItem(storageKey);
+                return emptyState;
+            }
+
+            // Reset logic: 00:00 WIB (UTC+7). This corresponds to 17:00 UTC of the previous day.
+            const now = new Date();
+            const lastReset = new Date();
+
+            // Set potential reset time to today 17:00 UTC
+            lastReset.setUTCHours(17, 0, 0, 0);
+
+            // If current time is before today's 17:00 UTC, the last effective reset was yesterday at 17:00 UTC.
+            if (now.getTime() < lastReset.getTime()) {
+                lastReset.setUTCDate(lastReset.getUTCDate() - 1);
+            }
+
+            if (timestamp < lastReset.getTime()) {
+                localStorage.removeItem(storageKey);
+                return emptyState;
+            }
+
+            return data;
+        } catch (error) {
+            console.error(`Failed to load state for ${market}:`, error);
+            localStorage.removeItem(storageKey);
+            return emptyState;
+        }
+    }
 
     function getSelectedDigitCount() {
         // Mengambil nilai dari radio button yang dipilih
@@ -443,7 +495,7 @@
     function renderDigits() {
         const allDigits = Array.from(document.querySelectorAll('.digit'));
         const count = allDigits.length.toString();
-        const codeToRender = generatedCodes[count] || [];
+        const codeToRender = (allGeneratedCodes[currentMarket] && allGeneratedCodes[currentMarket][count]) || [];
 
         allDigits.forEach((digit, index) => {
             const number = codeToRender[index];
@@ -467,87 +519,46 @@
             const j = Math.floor(Math.random() * (i + 1));
             [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
         }
-        generatedCodes['7'] = numbers.slice(0, 7);
+        allGeneratedCodes[currentMarket]['7'] = numbers.slice(0, 7);
+    }
+
+    // Fungsi rekursif untuk memastikan kode dibuat secara hirarkis, hanya jika belum ada.
+    function generateAndStoreCode(count) {
+        // Fungsi ini hanya dipanggil jika generatedCodes[count] kosong.
+
+        if (count === 7) {
+            // Ini adalah pembuatan pertama kode 7 digit untuk hari ini.
+            createMasterCode();
+        } else {
+            // Ini adalah pembuatan pertama kode 6, 5, atau 4 digit untuk hari ini.
+            const parentCount = count + 1;
+            // Pastikan kode induknya ada. Jika tidak, buat secara rekursif.
+            if (allGeneratedCodes[currentMarket][parentCount.toString()].length === 0) {
+                generateAndStoreCode(parentCount);
+            }
+            
+            // Sekarang kode induk dijamin ada, buat kode saat ini darinya.
+            const parentCode = allGeneratedCodes[currentMarket][parentCount.toString()];
+            const shuffledParent = [...parentCode];
+            for (let i = shuffledParent.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffledParent[i], shuffledParent[j]] = [shuffledParent[j], shuffledParent[i]];
+            }
+            allGeneratedCodes[currentMarket][count.toString()] = shuffledParent.slice(0, count);
+        }
     }
 
     function generateRandomCode(count) {
         const allDigits = Array.from(document.querySelectorAll('.digit'));
         if (allDigits.length === 0) return;
 
-        // Jika generate 7 digit, buat master code baru dan reset turunan.
-        if (count === 7) {
-            createMasterCode();
-            // Reset kode turunan karena master code telah berubah
-            generatedCodes['6'] = [];
-            generatedCodes['5'] = [];
-            generatedCodes['4'] = [];
-        } else { // Logika baru untuk turunan (6, 5, 4 digit) yang hirarkis
-            // Pastikan master code 7 digit ada, jika tidak, buat dulu.
-            if (generatedCodes['7'].length === 0) {
-                createMasterCode();
-            }
-
-            if (count === 6) {
-                // Acak master code 7 digit untuk menghasilkan kode 6 digit
-                const shuffledMaster = [...generatedCodes['7']];
-                for (let i = shuffledMaster.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [shuffledMaster[i], shuffledMaster[j]] = [shuffledMaster[j], shuffledMaster[i]];
-                }
-                generatedCodes['6'] = shuffledMaster.slice(0, 6);
-                // Reset turunan yang lebih kecil
-                generatedCodes['5'] = [];
-                generatedCodes['4'] = [];
-            } else if (count === 5) {
-                // Sesuai permintaan: 5 digit diambil dari 6 digit secara acak.
-                // Pastikan kode 6 digit ada. Jika tidak, buat dari master 7 digit.
-                if (generatedCodes['6'].length === 0) {
-                    const shuffledMaster = [...generatedCodes['7']];
-                    for (let i = shuffledMaster.length - 1; i > 0; i--) {
-                        const j = Math.floor(Math.random() * (i + 1));
-                        [shuffledMaster[i], shuffledMaster[j]] = [shuffledMaster[j], shuffledMaster[i]];
-                    }
-                    generatedCodes['6'] = shuffledMaster.slice(0, 6);
-                }
-                // Sekarang, acak kode 6 digit untuk mendapatkan 5 digit.
-                const shuffled6 = [...generatedCodes['6']];
-                for (let i = shuffled6.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [shuffled6[i], shuffled6[j]] = [shuffled6[j], shuffled6[i]];
-                }
-                generatedCodes['5'] = shuffled6.slice(0, 5);
-                // Reset turunan yang lebih kecil
-                generatedCodes['4'] = [];
-            } else if (count === 4) {
-                // Logika konsisten: 4 digit diambil dari 5 digit secara acak.
-                // Pastikan kode 5 digit ada. Jika tidak, buat dari 6 -> 7.
-                if (generatedCodes['5'].length === 0) {
-                    if (generatedCodes['6'].length === 0) {
-                        const shuffledMaster = [...generatedCodes['7']];
-                        for (let i = shuffledMaster.length - 1; i > 0; i--) {
-                            const j = Math.floor(Math.random() * (i + 1));
-                            [shuffledMaster[i], shuffledMaster[j]] = [shuffledMaster[j], shuffledMaster[i]];
-                        }
-                        generatedCodes['6'] = shuffledMaster.slice(0, 6);
-                    }
-                    const shuffled6 = [...generatedCodes['6']];
-                    for (let i = shuffled6.length - 1; i > 0; i--) {
-                        const j = Math.floor(Math.random() * (i + 1));
-                        [shuffled6[i], shuffled6[j]] = [shuffled6[j], shuffled6[i]];
-                    }
-                    generatedCodes['5'] = shuffled6.slice(0, 5);
-                }
-                // Sekarang, acak kode 5 digit untuk mendapatkan 4 digit.
-                const shuffled5 = [...generatedCodes['5']];
-                for (let i = shuffled5.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [shuffled5[i], shuffled5[j]] = [shuffled5[j], shuffled5[i]];
-                }
-                generatedCodes['4'] = shuffled5.slice(0, 4);
-            }
+        // Jika kode untuk jumlah digit ini belum ada untuk hari ini, buat sekarang.
+        if (allGeneratedCodes[currentMarket][count.toString()].length === 0) {
+            generateAndStoreCode(count);
+            saveState(currentMarket); // Simpan state baru karena ada kode yang baru dibuat.
         }
 
-        // Picu animasi dan render ulang tampilan dari masterCode
+        // Sekarang kode dijamin ada. Cukup picu animasi dan render ulang.
         codeContainer.classList.add('generating');
         renderDigits();
 
@@ -582,6 +593,12 @@
         if (clickedButton) {
             const title = clickedButton.dataset.title;
             const theme = clickedButton.dataset.theme;
+
+            currentMarket = theme; // Set market context
+
+            if (!allGeneratedCodes[currentMarket]) {
+                allGeneratedCodes[currentMarket] = loadStateForMarket(currentMarket);
+            }
             
             // Set the title of the generator page
             generatorTitle.textContent = title;
@@ -605,14 +622,8 @@
 
         // Reset body theme kembali ke tampilan menu utama (bumi)
         body.className = 'main-menu-view';
-
-        // Reset state agar saat mulai lagi, papan bersih
-        generatedCodes = {
-            '7': [],
-            '6': [],
-            '5': [],
-            '4': []
-        };
+        
+        currentMarket = null; // Hapus konteks market saat ini
     });
 
     // Listener untuk berpindah-pindah menu/view
