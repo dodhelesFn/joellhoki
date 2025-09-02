@@ -20,35 +20,47 @@
 
         .theme-hongkong {
             --bg-color: #1a1a2e;      /* Ungu sangat gelap */
-            --digit-bg: #2a2a4e;
+            --digit-bg: rgba(22, 27, 34, 0.75); /* Kontainer transparan netral */
             --border-color: #4a4a7e;
             --glow-color: #e040fb;      /* Pink Neon */
             --text-color: #e6e6fa;      /* Lavender putih */
+
+            /* Latar belakang disamakan dengan menu utama */
+            background: linear-gradient(rgba(13, 17, 23, 0.7), rgba(13, 17, 23, 0.9)), url('https://images.unsplash.com/photo-1534723452862-4c874018d66d?q=80&w=2670&auto=format&fit=crop') center/cover no-repeat fixed;
         }
 
         .theme-sydney {
             --bg-color: #0a192f;      /* Biru Navy gelap */
-            --digit-bg: #172a45;
+            --digit-bg: rgba(22, 27, 34, 0.75); /* Kontainer transparan netral */
             --border-color: #304a6d;
             --glow-color: #64ffda;      /* Aqua/Teal cerah */
             --text-color: #ccd6f6;      /* Biru pucat */
+
+            /* Latar belakang disamakan dengan menu utama */
+            background: linear-gradient(rgba(13, 17, 23, 0.7), rgba(13, 17, 23, 0.9)), url('https://images.unsplash.com/photo-1534723452862-4c874018d66d?q=80&w=2670&auto=format&fit=crop') center/cover no-repeat fixed;
         }
 
         /* Tema Warna Baru */
         .theme-singapore {
             --bg-color: #1a1010;
-            --digit-bg: #2a1d1d;
+            --digit-bg: rgba(22, 27, 34, 0.75); /* Kontainer transparan netral */
             --border-color: #4d3333;
             --glow-color: #d32f2f; /* Merah */
             --text-color: #f0f6fc;
+
+            /* Latar belakang disamakan dengan menu utama */
+            background: linear-gradient(rgba(13, 17, 23, 0.7), rgba(13, 17, 23, 0.9)), url('https://images.unsplash.com/photo-1534723452862-4c874018d66d?q=80&w=2670&auto=format&fit=crop') center/cover no-repeat fixed;
         }
 
         .theme-china {
             --bg-color: #2b0c0e;
-            --digit-bg: #3c1b1d;
+            --digit-bg: rgba(22, 27, 34, 0.75); /* Kontainer transparan netral */
             --border-color: #5c4b1e;
             --glow-color: #ffc107; /* Emas */
             --text-color: #fffde7;
+
+            /* Latar belakang disamakan dengan menu utama */
+            background: linear-gradient(rgba(13, 17, 23, 0.7), rgba(13, 17, 23, 0.9)), url('https://images.unsplash.com/photo-1534723452862-4c874018d66d?q=80&w=2670&auto=format&fit=crop') center/cover no-repeat fixed;
         }
 
 
@@ -63,14 +75,16 @@
             min-height: 100vh;
             margin: 0;
             text-align: center;
-            transition: background 0.5s ease-in-out;
+            transition: background-color 0.5s ease-in-out;
         }
 
         /* Latar belakang khusus untuk menu utama dengan tema bumi */
         body.main-menu-view {
-            /* Latar belakang estetik baru untuk menu utama */
-            background: #0d1117; /* Fallback */
-            background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+            /* Latar belakang gambar estetik baru */
+            background-image: linear-gradient(rgba(13, 17, 23, 0.7), rgba(13, 17, 23, 0.9)), url('https://images.unsplash.com/photo-1534723452862-4c874018d66d?q=80&w=2670&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             overflow: hidden;
         }
 
@@ -150,6 +164,9 @@
             }
         }
 
+        @keyframes gradientBG {
+            /* Animasi ini tidak lagi digunakan untuk latar belakang menu utama */
+        }
         /* Warna Bola Biliar */
         .ball-color-0 { background: radial-gradient(circle at 33% 33%, #ffffff, #e0e0e0); color: #212121; border: 2px solid #bdbdbd; } /* Cue ball */
         .ball-color-1 { background: radial-gradient(circle at center, white 27%, transparent 28%), radial-gradient(circle at 33% 33%, #ffee58, #fbc02d); color: #212121; border: 2px solid #f57f17; } /* Yellow */
@@ -247,10 +264,20 @@
         #main-menu h1 {
             font-family: var(--font-family);
             font-size: 2.5rem;
-            color: #e6edf3;
-            text-shadow: 0 0 8px rgba(88, 166, 255, 0.5), 0 0 20px rgba(88, 166, 255, 0.3);
+            /* Teks gradien animasi */
+            background: linear-gradient(90deg, #e6e6fa, #ccd6f6, #64ffda, #e6e6fa);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: textGradient 8s linear infinite;
             margin-bottom: 50px;
             letter-spacing: 3px;
+        }
+
+        @keyframes textGradient {
+            to {
+                background-position: -200% center;
+            }
         }
 
         .menu-actions {
