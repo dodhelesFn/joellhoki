@@ -100,9 +100,17 @@
             box-sizing: border-box;
         }
 
-        h1 {
-            font-size: 1.5rem;
+        .title-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
             margin-bottom: 30px;
+            flex-wrap: wrap; /* For smaller screens */
+        }
+
+        .container h1 {
+            font-size: 1.5rem;
             letter-spacing: 1px;
             color: var(--text-color);
         }
@@ -326,6 +334,59 @@
             color: #fff;
         }
 
+        /* Preloader Styling */
+        #preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            background-color: #0d1117;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.8s ease-out;
+        }
+
+        #preloader.loaded {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loader {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: var(--glow-color);
+            box-shadow: 0 0 20px var(--glow-color), 0 0 40px var(--glow-color);
+            animation: pulse 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(0.8); opacity: 0.7; }
+            50% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Animation for view transitions */
+        .view-fade-out {
+            animation: fadeOut 0.4s ease-out forwards;
+        }
+
+        .view-fade-in {
+            animation: fadeIn 0.4s ease-in forwards;
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0; transform: scale(0.98); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
         /* --- Media Queries untuk Responsiveness --- */
 
         /* Untuk Tablet dan layar yang lebih kecil */
@@ -383,6 +444,10 @@
 </head>
 <body class="main-menu-view">
 
+<div id="preloader">
+    <div class="loader"></div>
+</div>
+
 <div id="main-menu">
     <h1>PILIH GENERATOR</h1>
     <div class="menu-actions">
@@ -395,7 +460,10 @@
 
 <main id="generator-app" style="display: none;">
     <div class="container">
-        <h1 id="generator-title">Generator Kode Acak</h1>
+        <div class="title-container">
+            <h1 id="generator-title">Generator Kode Acak</h1>
+            <select id="market-switcher" title="Pindah Pasar"></select>
+        </div>
         <div class="code-display" id="code-container">
             <!-- Digit akan dibuat oleh JavaScript -->
         </div>
@@ -433,11 +501,21 @@
     const codeContainer = document.getElementById('code-container');
     const optionsContainer = document.querySelector('.options-container');
     const generateActions = document.querySelector('.generate-actions');
+    const marketSwitcher = document.getElementById('market-switcher');
     const LOCAL_STORAGE_KEY_PREFIX = 'joellHokiGeneratorState';
 
     // State: Satu-satunya sumber kebenaran untuk kode yang digenerate
     let currentMarket = null;
     let allGeneratedCodes = {}; // e.g., { hongkong: { '7': [], ... }, sydney: { ... } }
+
+    const markets = Array.from(mainMenu.querySelectorAll('[data-theme]')).map(btn => ({
+        theme: btn.dataset.theme,
+        title: btn.dataset.title,
+        // Extract the market name for the dropdown
+        name: btn.textContent.replace('Generate ', '')
+    }));
+
+    // --- State Management (LocalStorage & Reset Logic) ---
 
     function getStorageKey(market) {
         return `${LOCAL_STORAGE_KEY_PREFIX}_${market}`;
@@ -493,6 +571,8 @@
             return emptyState;
         }
     }
+
+    // --- UI Rendering & Core Logic ---
 
     function getSelectedDigitCount() {
         // Mengambil nilai dari radio button yang dipilih
@@ -614,43 +694,83 @@
         updateView(initialCount);
     }
 
+    function populateMarketSwitcher() {
+        marketSwitcher.innerHTML = '';
+        markets.forEach(market => {
+            const option = document.createElement('option');
+            option.value = market.theme;
+            option.textContent = market.name;
+            marketSwitcher.appendChild(option);
+        });
+    }
+
+    function switchMarket(newMarketTheme) {
+        // 1. Update state
+        currentMarket = newMarketTheme;
+        if (!allGeneratedCodes[currentMarket]) {
+            allGeneratedCodes[currentMarket] = loadStateForMarket(currentMarket);
+        }
+
+        // 2. Update UI
+        const marketInfo = markets.find(m => m.theme === newMarketTheme);
+        generatorTitle.textContent = marketInfo.title;
+        marketSwitcher.value = newMarketTheme;
+
+        // 3. Update Theme
+        // Remove all theme-* classes before adding the new one
+        const themeClasses = markets.map(m => `theme-${m.theme}`);
+        body.classList.remove('main-menu-view', ...themeClasses);
+        body.classList.add(`theme-${newMarketTheme}`);
+
+        // 4. Re-initialize the view for the new market
+        initializeApp();
+    }
+
+    // --- Event Listeners ---
+
     // Event Listeners
     mainMenu.addEventListener('click', (event) => {
         const clickedButton = event.target.closest('[data-title]');
         if (clickedButton) {
-            const title = clickedButton.dataset.title;
-            const theme = clickedButton.dataset.theme;
+            mainMenu.classList.add('view-fade-out');
 
-            currentMarket = theme; // Set market context
+            mainMenu.addEventListener('animationend', () => {
+                mainMenu.style.display = 'none';
+                mainMenu.classList.remove('view-fade-out');
 
-            if (!allGeneratedCodes[currentMarket]) {
-                allGeneratedCodes[currentMarket] = loadStateForMarket(currentMarket);
-            }
-            
-            // Set the title of the generator page
-            generatorTitle.textContent = title;
+                const theme = clickedButton.dataset.theme;
+                switchMarket(theme);
 
-            // Hapus latar belakang bumi dan beralih ke latar belakang aplikasi
-            body.classList.remove('main-menu-view');
+                generatorApp.style.display = 'block';
+                generatorApp.classList.add('view-fade-in');
 
-            // Apply the theme to the body
-            if (theme) { body.classList.add(`theme-${theme}`); }
+                generatorApp.addEventListener('animationend', () => {
+                    generatorApp.classList.remove('view-fade-in');
+                }, { once: true });
 
-            mainMenu.style.display = 'none';
-            generatorApp.style.display = 'block';
-            initializeApp();
+            }, { once: true });
         }
     });
 
     backBtn.addEventListener('click', () => {
-        // Sembunyikan generator dan tampilkan menu utama
-        generatorApp.style.display = 'none';
-        mainMenu.style.display = 'block';
+        generatorApp.classList.add('view-fade-out');
 
-        // Reset body theme kembali ke tampilan menu utama (bumi)
-        body.className = 'main-menu-view';
-        
-        currentMarket = null; // Hapus konteks market saat ini
+        generatorApp.addEventListener('animationend', () => {
+            generatorApp.style.display = 'none';
+            generatorApp.classList.remove('view-fade-out');
+
+            mainMenu.style.display = 'block';
+            mainMenu.classList.add('view-fade-in');
+
+            // Reset body theme dan state
+            body.className = 'main-menu-view';
+            currentMarket = null;
+
+            mainMenu.addEventListener('animationend', () => {
+                mainMenu.classList.remove('view-fade-in');
+            }, { once: true });
+
+        }, { once: true });
     });
 
     // Listener untuk berpindah-pindah menu/view
@@ -669,6 +789,42 @@
             generateRandomCode(digitCount);
         }
     });
+
+    marketSwitcher.addEventListener('change', (event) => {
+        const newTheme = event.target.value;
+        if (newTheme === currentMarket) return; // Jangan lakukan apa-apa jika pasar sama
+
+        // 1. Pudar keluar konten saat ini
+        container.classList.add('view-fade-out');
+
+        container.addEventListener('animationend', () => {
+            // 2. Setelah pudar, hapus kelas animasi
+            container.classList.remove('view-fade-out');
+
+            // 3. Ganti data dan tema pasar
+            switchMarket(newTheme);
+
+            // 4. Munculkan konten baru dengan animasi masuk
+            container.classList.add('view-fade-in');
+            container.addEventListener('animationend', () => container.classList.remove('view-fade-in'), { once: true });
+
+        }, { once: true });
+    });
+
+    // Preloader logic
+    window.addEventListener('load', () => {
+        const preloader = document.getElementById('preloader');
+        if (preloader) {
+            preloader.classList.add('loaded');
+            
+            preloader.addEventListener('transitionend', () => {
+                preloader.style.display = 'none';
+            }, { once: true });
+        }
+    });
+
+    // Initial setup
+    populateMarketSwitcher();
 </script>
 
 </body>
